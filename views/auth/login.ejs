@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - College Voting</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+        }
+        .login-container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 10px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+            width: 350px; 
+        }
+        h2 { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: #333; 
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #555; 
+        }
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 2px solid #ddd; 
+            border-radius: 5px; 
+            font-size: 16px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #4CAF50; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            font-size: 16px; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background: #45a049; 
+        }
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
+        .demo-info { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #f8f9fa; 
+            border-radius: 5px; 
+            font-size: 14px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>College Voting System</h2>
+        
+        <% if (error) { %>
+            <div class="error"><%= error %></div>
+        <% } %>
+        
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        
+        <div class="demo-info">
+            <h3>Demo Accounts:</h3>
+            <p><strong>Admin:</strong> admin / admin123</p>
+            <p><strong>Student:</strong> student1 / student123</p>
+        </div>
+    </div>
+</body>
+</html>

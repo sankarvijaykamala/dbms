@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elections - Student</title>
+    <style>
+        body { font-family: Arial; margin: 0; background: #f5f5f5; }
+        .sidebar { width: 250px; background: #27ae60; color: white; height: 100vh; padding: 20px; position: fixed; }
+        .main-content { margin-left: 270px; padding: 30px; }
+        .header { background: white; padding: 20px; border-radius: 5px; margin-bottom: 30px; }
+        .election-card { background: white; padding: 20px; border-radius: 5px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { display: inline-block; padding: 8px 15px; margin: 5px; text-decoration: none; border-radius: 5px; color: white; font-size: 14px; }
+        .btn-primary { background: #4CAF50; }
+        .btn-secondary { background: #6c757d; }
+        .btn-info { background: #17a2b8; }
+        .voted { color: #28a745; font-weight: bold; }
+        .not-voted { color: #dc3545; font-weight: bold; }
+        a { color: white; text-decoration: none; display: block; padding: 10px; border-radius: 5px; margin: 5px 0; }
+        a:hover { background: #219653; }
+        .alert { padding: 12px; border-radius: 5px; margin-bottom: 20px; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .debug-panel { background: #e7f3ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #b3d9ff; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Student Panel</h2>
+        <a href="/student/dashboard">📊 Dashboard</a>
+        <a href="/student/elections" style="background: #219653;">🗳️ View Elections</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+    
+    <div class="main-content">
+        <div class="header">
+            <h1>All Elections</h1>
+            <p>Welcome, <%= user.full_name %>!</p>
+        </div>
+
+        <!-- Debug Panel -->
+        <div class="debug-panel">
+            <h3>🔍 Election Status Check</h3>
+            <p><strong>Your ID:</strong> <%= user.student_id %></p>
+            <p><strong>Current Time:</strong> <span id="currentTime"><%= new Date().toLocaleString() %></span></p>
+            
+            <% if (typeof error !== 'undefined') { %>
+                <div class="alert alert-error">
+                    <strong>❌ Error:</strong> 
+                    <% if (error === 'election_not_active') { %>
+                        Election is not active. Current status: <%= typeof status !== 'undefined' ? status : 'unknown' %>
+                    <% } else if (error === 'already_voted') { %>
+                        You have already voted in this election!
+                    <% } else if (error === 'no_candidates') { %>
+                        No approved candidates available for this election.
+                    <% } else if (error === 'election_ended') { %>
+                        This election has already ended.
+                    <% } else { %>
+                        <%= error %>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Success Message -->
+        <% if (typeof success !== 'undefined' && success === 'voted') { %>
+            <div class="alert alert-success">✅ Your vote has been recorded successfully!</div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined') { %>
+            <div class="alert alert-error">
+                <% if (error === 'already_voted') { %>
+                    ❌ You have already voted in this election!
+                <% } else if (error === 'no_candidates') { %>
+                    ❌ No candidates available for this election yet.
+                <% } else if (error === 'election_ended') { %>
+                    ❌ This election has already ended.
+                <% } %>
+            </div>
+        <% } %>
+        
+        <% if (elections.length === 0) { %>
+            <div style="background: white; padding: 30px; text-align: center; border-radius: 5px;">
+                <h3>No ongoing elections</h3>
+                <p>Check back later for new elections!</p>
+            </div>
+        <% } else { %>
+            <% elections.forEach(election => { %>
+            <div class="election-card">
+                <h3><%= election.title %></h3>
+                <p><%= election.description %></p>
+                <p><strong>Deadline:</strong> <%= new Date(election.end_date).toLocaleString() %></p>
+                <p><strong>Candidates:</strong> <%= election.candidate_count %></p>
+                <p><strong>Status:</strong> 
+                    <span style="color: 
+                        <% if (election.status === 'ongoing') { %>#28a745<% } %>
+                        <% if (election.status === 'upcoming') { %>#ffc107<% } %>
+                        <% if (election.status === 'completed') { %>#6c757d<% } %>
+                    ; font-weight: bold;">
+                        <%= election.status.toUpperCase() %>
+                    </span>
+                </p>
+                <p><strong>Your Status:</strong> 
+                    <span class="<%= election.has_voted ? 'voted' : 'not-voted' %>">
+                        <%= election.has_voted ? '✅ Voted' : '❌ Not Voted' %>
+                    </span>
+                </p>
+                <div>
+                    <% if (election.status === 'ongoing' && !election.has_voted) { %>
+                        <a href="/student/vote/<%= election.id %>" class="btn btn-primary">🗳️ Vote Now</a>
+                    <% } %>
+                    <a href="/student/results/<%= election.id %>" class="btn btn-info">📊 View Results</a>
+                </div>
+            </div>
+            <% }); %>
+        <% } %>
+    </div>
+
+    <script>
+        // Update current time every second
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>

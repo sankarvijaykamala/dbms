@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Elections - Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            background: #f5f5f5;
+        }
+        
+        .sidebar { 
+            width: 250px; 
+            background: #2c3e50; 
+            color: white; 
+            height: 100vh; 
+            padding: 20px; 
+            position: fixed;
+        }
+        
+        .main-content { 
+            margin-left: 270px; 
+            padding: 30px; 
+        }
+        
+        .header { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 5px; 
+            margin-bottom: 30px; 
+        }
+        
+        .election-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 5px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .btn { 
+            display: inline-block; 
+            padding: 8px 15px; 
+            margin: 5px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            color: white; 
+            font-size: 14px; 
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary { background: #4CAF50; }
+        .btn-secondary { background: #6c757d; }
+        .btn-info { background: #17a2b8; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; }
+        
+        .status-upcoming { color: #ffc107; font-weight: bold; }
+        .status-ongoing { color: #28a745; font-weight: bold; }
+        .status-completed { color: #6c757d; font-weight: bold; }
+        
+        a { 
+            color: white; 
+            text-decoration: none; 
+            display: block; 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin: 5px 0; 
+        }
+        
+        a:hover { background: #34495e; }
+        
+        .debug-panel {
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .manual-control {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        .danger-zone {
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Admin Panel</h2>
+        <a href="/admin/dashboard">📊 Dashboard</a>
+        <a href="/admin/create-election">➕ Create Election</a>
+        <a href="/admin/elections" style="background: #34495e;">🗳️ View Elections</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+    
+    <div class="main-content">
+        <div class="header">
+            <h1>Manage Elections</h1>
+            <p>Welcome, <%= user.full_name %>!</p>
+        </div>
+
+        <!-- Debug Panel -->
+        <div class="debug-panel">
+            <h3>🔧 Debug Controls</h3>
+            <p><strong>Current Server Time:</strong> <span id="currentTime"><%= new Date().toLocaleString() %></span></p>
+            
+            <div style="margin-top: 10px;">
+                <a href="/admin/force-update-all" class="btn btn-info">
+                    🔄 Update All Statuses
+                </a>
+                <a href="/admin/elections" class="btn btn-secondary">
+                    🔁 Refresh Page
+                </a>
+            </div>
+        </div>
+
+        <!-- Success/Error Messages -->
+        <% if (typeof success !== 'undefined') { %>
+            <div class="alert alert-success">
+                <% if (success === 'status_updated') { %>
+                    ✅ Election status updated successfully!
+                <% } else if (success === 'all_updated') { %>
+                    ✅ All election statuses updated successfully!
+                <% } else if (success === 'active_forced') { %>
+                    ✅ Election forced to active status!
+                <% } else if (success === 'election_deleted') { %>
+                    ✅ Election deleted successfully!
+                <% } %>
+            </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined') { %>
+            <div class="alert alert-error">
+                <% if (error === 'update_failed') { %>
+                    ❌ Failed to update election status!
+                <% } else if (error === 'election_deleted') { %>
+                    ❌ Failed to delete election!
+                <% } %>
+            </div>
+        <% } %>
+
+        <!-- Manual Control Info -->
+        <div class="manual-control">
+            <strong>⚠️ For Demo:</strong> If automatic status updates don't work, use the manual controls below each election.
+        </div>
+        
+        <% if (elections.length === 0) { %>
+            <div style="background: white; padding: 30px; text-align: center; border-radius: 5px;">
+                <h3>No elections created yet</h3>
+                <p>Create your first election to get started!</p>
+                <a href="/admin/create-election" class="btn btn-primary" style="display: inline-block; width: auto;">Create Election</a>
+            </div>
+        <% } else { %>
+            <% elections.forEach(election => { %>
+            <div class="election-card">
+                <h3><%= election.title %></h3>
+                <p><%= election.description %></p>
+                <p><strong>Period:</strong> <%= new Date(election.start_date).toLocaleString() %> to <%= new Date(election.end_date).toLocaleString() %></p>
+                <p><strong>Status:</strong> <span class="status-<%= election.status %>"><%= election.status.toUpperCase() %></span></p>
+                <p><strong>Candidates:</strong> <%= election.candidate_count %> | <strong>Votes:</strong> <%= election.vote_count %></p>
+                <p><strong>Created by:</strong> <%= election.created_by_name %></p>
+                
+                <!-- Manual Status Control -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <strong>Manual Control:</strong>
+                    <form method="POST" action="/admin/force-active/<%= election.id %>" style="display: inline;">
+                        <button type="submit" class="btn btn-primary">Set Active</button>
+                    </form>
+                    <form method="POST" action="/admin/update-election-status/<%= election.id %>" style="display: inline;">
+                        <button type="submit" name="status" value="upcoming" class="btn btn-warning">Set Upcoming</button>
+                        <button type="submit" name="status" value="completed" class="btn btn-secondary">Set Completed</button>
+                    </form>
+                </div>
+                
+                <!-- Danger Zone - Delete Election -->
+                <div class="danger-zone">
+                    <strong>🚨 Danger Zone:</strong>
+                    <form method="POST" action="/admin/delete-election/<%= election.id %>" style="display: inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('⚠️ WARNING: This will permanently delete this election, all candidates, and all votes! This action cannot be undone. Are you sure?')">
+                            🗑️ Delete Election
+                        </button>
+                    </form>
+                    <p style="font-size: 0.8em; color: #721c24; margin-top: 5px;">
+                        This will permanently delete the election, all candidates, and all votes!
+                    </p>
+                </div>
+                
+                <div>
+                    <a href="/admin/manage-candidates/<%= election.id %>" class="btn btn-info">👥 Manage Candidates</a>
+                    <a href="/admin/results/<%= election.id %>" class="btn btn-secondary">📊 View Results</a>
+                </div>
+            </div>
+            <% }); %>
+        <% } %>
+    </div>
+
+    <script>
+        // Update current time every second
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+        }
+        setInterval(updateTime, 1000);
+        
+        // Add confirmation for manual status changes
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const button = e.submitter;
+                if (button.value === 'upcoming' || button.value === 'completed') {
+                    if (!confirm(`Are you sure you want to set this election to ${button.value.toUpperCase()}?`)) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

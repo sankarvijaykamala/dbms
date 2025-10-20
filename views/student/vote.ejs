@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cast Your Vote - <%= election.title %></title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            background: linear(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .voting-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .voting-header {
+            background: linear(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .voting-header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+        
+        .voting-header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .election-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .candidates-section {
+            padding: 30px;
+        }
+        
+        .candidate-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .candidate-card:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .candidate-card.selected {
+            border-color: #27ae60;
+            background: #f8fff9;
+        }
+        
+        .candidate-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .candidate-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        
+        .candidate-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear(135deg, #27ae60, #2ecc71);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .candidate-details {
+            flex: 1;
+        }
+        
+        .candidate-name {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .candidate-position {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .candidate-manifesto {
+            color: #7f8c8d;
+            line-height: 1.6;
+            font-style: italic;
+            border-left: 3px solid #3498db;
+            padding-left: 15px;
+            margin-top: 10px;
+        }
+        
+        .selection-indicator {
+            width: 25px;
+            height: 25px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 10px;
+        }
+        
+        .candidate-card.selected .selection-indicator {
+            border-color: #27ae60;
+            background: #27ae60;
+        }
+        
+        .candidate-card.selected .selection-indicator::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+        }
+        
+        .vote-actions {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-back {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-back:hover {
+            background: #7f8c8d;
+        }
+        
+        .btn-vote {
+            background: #27ae60;
+            color: white;
+            font-size: 18px;
+            padding: 18px 40px;
+        }
+        
+        .btn-vote:hover {
+            background: #219653;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-vote:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            color: #856404;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .candidate-info {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .vote-actions {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="voting-container">
+        <div class="voting-header">
+            <h1>🗳️ Cast Your Vote</h1>
+            <p>Your voice matters! Choose your candidate carefully.</p>
+        </div>
+        
+        <div class="election-info">
+            <h2 style="color: #2c3e50; margin-bottom: 10px;">🏛️ <%= election.title %></h2>
+            <p style="color: #7f8c8d;"><%= election.description %></p>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Voting Instructions</h3>
+            <ol>
+                <li>Read each candidate's information carefully</li>
+                <li>Click on your preferred candidate to select them</li>
+                <li>Review your selection before submitting</li>
+                <li>Click "Submit Vote" to cast your ballot</li>
+                <li><strong>Note:</strong> You cannot change your vote after submission</li>
+            </ol>
+        </div>
+        
+        <div class="candidates-section">
+            <h3 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">🎯 Available Candidates</h3>
+            
+            <form method="POST" action="/student/vote/<%= election.id %>" id="voteForm">
+                <% if (candidates && candidates.length > 0) { %>
+                    <% candidates.forEach((candidate, index) => { %>
+                    <div class="candidate-card" onclick="selectCandidate(<%= candidate.candidate_id %>)">
+                        <input type="radio" name="candidate_id" value="<%= candidate.candidate_id %>" id="candidate<%= candidate.candidate_id %>" required>
+                        <div class="candidate-info">
+                            <div class="candidate-avatar">
+                                <%= candidate.full_name.split(' ').map(n => n[0]).join('').toUpperCase() %>
+                            </div>
+                            <div class="candidate-details">
+                                <div class="candidate-name"><%= candidate.full_name %></div>
+                                <div class="candidate-position">Running for: <%= candidate.position %></div>
+                                <% if (candidate.manifesto) { %>
+                                    <div class="candidate-manifesto">"<%= candidate.manifesto %>"</div>
+                                <% } else { %>
+                                    <div class="candidate-manifesto" style="color: #bdc3c7;">No manifesto provided</div>
+                                <% } %>
+                            </div>
+                            <div class="selection-indicator"></div>
+                        </div>
+                    </div>
+                    <% }); %>
+                <% } else { %>
+                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <h3>😔 No Candidates Available</h3>
+                        <p>There are no approved candidates for this election yet.</p>
+                    </div>
+                <% } %>
+                
+                <% if (candidates && candidates.length > 0) { %>
+                <div class="vote-actions">
+                    <a href="/student/elections" class="btn btn-back">← Back to Elections</a>
+                    <button type="submit" class="btn btn-vote" id="voteButton">
+                        ✅ Submit Vote
+                    </button>
+                </div>
+                <% } %>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let selectedCandidate = null;
+        
+        function selectCandidate(candidateId) {
+            // Remove selection from all candidates
+            document.querySelectorAll('.candidate-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selection to clicked candidate
+            const selectedCard = document.querySelector(`input[value="${candidateId}"]`).closest('.candidate-card');
+            selectedCard.classList.add('selected');
+            
+            // Check the radio button
+            document.getElementById(`candidate${candidateId}`).checked = true;
+            selectedCandidate = candidateId;
+            
+            // Enable the vote button
+            document.getElementById('voteButton').disabled = false;
+        }
+        
+        // Form submission handler
+        document.getElementById('voteForm').addEventListener('submit', function(e) {
+            if (!selectedCandidate) {
+                e.preventDefault();
+                alert('Please select a candidate before voting!');
+                return;
+            }
+            
+            const voteButton = document.getElementById('voteButton');
+            voteButton.disabled = true;
+            voteButton.innerHTML = '⏳ Submitting Vote...';
+            voteButton.style.background = '#95a5a6';
+            
+            // Confirm vote
+            if (!confirm('Are you sure you want to vote for this candidate? You cannot change your vote after submission.')) {
+                e.preventDefault();
+                voteButton.disabled = false;
+                voteButton.innerHTML = '✅ Submit Vote';
+                voteButton.style.background = '#27ae60';
+            }
+        });
+        
+        // Initialize - disable vote button until selection
+        document.getElementById('voteButton').disabled = true;
+    </script>
+</body>
+</html>
