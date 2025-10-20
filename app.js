@@ -1,32 +1,25 @@
+// app.js
+
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const db = require('./config/db');
 
 const app = express();
+
+// Set EJS as the view engine and set the views directory
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Session configuration
+// Session
 app.use(session({
-    secret: 'your-secret-key-here',
+    secret: 'college_voting_secret_2024',
     resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+    saveUninitialized: false
 }));
-
-// Set EJS as template engine
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-// Global middleware to make user data available to all views
-app.use((req, res, next) => {
-    res.locals.user = req.session.user || null;
-    next();
-});
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -38,7 +31,7 @@ app.use('/', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/student', studentRoutes);
 
-// Home route - redirect to appropriate dashboard
+// Home page
 app.get('/', (req, res) => {
     if (req.session.user) {
         if (req.session.user.role === 'admin') {
@@ -51,27 +44,9 @@ app.get('/', (req, res) => {
     }
 });
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).render('404', { 
-        user: req.session.user || null,
-        message: 'Page not found' 
-    });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).render('error', { 
-        user: req.session.user || null,
-        message: 'Something went wrong!' 
-    });
-});
-
-const PORT = process.env.PORT || 3000;
-
+// Start server
+const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log('Admin Login: username: admin, password: admin');
-    console.log('Student Login: username: student1, password: password');
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`👤 Admin Login: college ID: admin, password: admin`);
 });

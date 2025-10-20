@@ -3,122 +3,173 @@
 <head>
     <title>Election Results - Admin</title>
     <style>
-        body { font-family: Arial; margin: 0; background: #f5f5f5; }
-        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px; position: fixed; }
-        .main-content { margin-left: 270px; padding: 30px; }
-        .header { background: white; padding: 20px; border-radius: 5px; margin-bottom: 30px; }
-        .result-card { background: white; padding: 20px; border-radius: 5px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .winner { border-left: 5px solid #28a745; background: #f8fff9; }
-        .position { color: #4CAF50; font-weight: bold; }
-        .votes { color: #666; font-size: 1.2em; }
-        .vote-bar { background: #e9ecef; height: 20px; border-radius: 10px; margin: 10px 0; overflow: hidden; }
-        .vote-fill { background: #4CAF50; height: 100%; border-radius: 10px; }
-        .stats { background: white; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .warning-box { background: #fff3cd; color: #856404; padding: 20px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #ffeaa7; }
-        a { color: white; text-decoration: none; display: block; padding: 10px; border-radius: 5px; margin: 5px 0; }
-        a:hover { background: #34495e; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            height: 100vh;
+            padding: 20px;
+            position: fixed;
+        }
+        
+        .main-content {
+            margin-left: 270px;
+            padding: 30px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .result-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 5px solid #3498db;
+        }
+        
+        .winner {
+            border-left: 5px solid #f39c12;
+            background: #fff9e6;
+        }
+        
+        .candidate-name {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .candidate-position {
+            font-weight: bold;
+            color: #27ae60;
+            margin-bottom: 10px;
+        }
+        
+        .vote-count {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .rank {
+            background: #3498db;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        
+        .winner-rank {
+            background: #f39c12;
+        }
+        
+        .total-votes {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #b3d9ff;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+        
+        a:hover {
+            background: #34495e;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>Admin Panel</h2>
         <a href="/admin/dashboard">📊 Dashboard</a>
-        <a href="/admin/create-election">➕ Create Election</a>
-        <a href="/admin/elections">🗳️ View Elections</a>
-        <% if (election && election.id) { %>
-            <a href="/admin/results/<%= election.id %>" style="background: #34495e;">📊 View Results</a>
-        <% } else { %>
-            <a href="/admin/elections" style="background: #34495e;">📊 View Results</a>
-        <% } %>
+        <a href="/admin/elections">🗳️ Manage Elections</a>
+        <a href="/admin/candidates">👥 Manage Candidates</a>
+        <a href="/admin/students">🎓 Manage Students</a>
         <a href="/logout">🚪 Logout</a>
     </div>
     
     <div class="main-content">
         <div class="header">
             <h1>Election Results</h1>
-            <% if (election && election.title) { %>
-                <p><strong>Election:</strong> <%= election.title %></p>
-            <% } else { %>
-                <p><strong>Election:</strong> Election not found</p>
-            <% } %>
-            <p>Welcome, <%= user.full_name %>!</p>
+            <h2><%= election.title %></h2>
+            <p><%= election.description %></p>
         </div>
         
-        <% if (election) { %>
-            <div class="stats">
-                <h3>Election Statistics</h3>
-                <p><strong>Total Votes:</strong> <%= totalVotes ? totalVotes : 0 %></p>
-                <p><strong>Status:</strong> <%= election.status %></p>
-                <p><strong>Period:</strong> 
-                    <% if (election.start_date) { %>
-                        <%= new Date(election.start_date).toLocaleString() %> 
-                    <% } else { %>
-                        Not set
-                    <% } %>
-                    to 
-                    <% if (election.end_date) { %>
-                        <%= new Date(election.end_date).toLocaleString() %>
-                    <% } else { %>
-                        Not set
-                    <% } %>
-                </p>
-                <p><strong>Current Time:</strong> <%= new Date(currentTime).toLocaleString() %></p>
-            </div>
-            
-            <% if (!canViewResults) { %>
-                <div class="warning-box">
-                    <h3>⚠️ Results Not Available Yet</h3>
-                    <p>Results will be available after the election ends on: <strong><%= new Date(endTime).toLocaleString() %></strong></p>
-                    <p>Current time: <strong><%= new Date(currentTime).toLocaleString() %></strong></p>
-                    <p><em>As admin, you can still view partial results below for monitoring.</em></p>
-                </div>
-            <% } %>
-            
-            <% if (results && results.length > 0) { %>
-                <% 
-                    let maxVotes = Math.max(...results.map(r => r.votes));
-                    let totalVotesCount = results.reduce((sum, candidate) => sum + candidate.votes, 0);
-                %>
-                
-                <% results.forEach((candidate, index) => { %>
-                <div class="result-card <%= candidate.votes === maxVotes && maxVotes > 0 ? 'winner' : '' %>">
-                    <h3>
-                        <%= index + 1 %>. <%= candidate.full_name %>
-                        <% if (candidate.votes === maxVotes && maxVotes > 0 && canViewResults) { %>
-                            <span style="color: #28a745;">🏆 Winner</span>
-                        <% } %>
-                    </h3>
-                    <div class="position">Position: <%= candidate.position %></div>
-                    <div class="votes">Votes: <strong><%= candidate.votes %></strong> 
-                        <% if (totalVotesCount > 0) { %>
-                            (<%= ((candidate.votes / totalVotesCount) * 100).toFixed(1) %>%)
-                        <% } %>
-                    </div>
-                    
-                    <% if (totalVotesCount > 0) { %>
-                    <div class="vote-bar">
-                        <div class="vote-fill" style="width: <%= (candidate.votes / totalVotesCount) * 100 %>%;"></div>
-                    </div>
-                    <% } %>
-                </div>
-                <% }); %>
-            <% } else { %>
-                <div style="background: white; padding: 30px; text-align: center; border-radius: 5px;">
-                    <h3>No results available yet</h3>
-                    <p>No approved candidates or votes recorded for this election.</p>
-                </div>
-            <% } %>
-            
-            <div style="margin-top: 20px;">
-                <a href="/admin/elections" style="display: inline-block; background: #6c757d;">← Back to Elections</a>
+        <div class="total-votes">
+            📊 Total Votes Cast: <strong><%= totalVotes %></strong>
+        </div>
+        
+        <% if (results.length === 0) { %>
+            <div class="no-results">
+                <h3>📭 No Results Available</h3>
+                <p>No votes have been cast for this election yet.</p>
             </div>
         <% } else { %>
-            <div style="background: white; padding: 30px; text-align: center; border-radius: 5px;">
-                <h3>Election not found</h3>
-                <p>The election you are looking for does not exist.</p>
-                <a href="/admin/elections" style="display: inline-block; background: #6c757d; margin-top: 15px;">← Back to Elections</a>
+            <% results.forEach((candidate, index) => { %>
+            <div class="result-card <%= index === 0 ? 'winner' : '' %>">
+                <div class="rank <%= index === 0 ? 'winner-rank' : '' %>">#<%= index + 1 %></div>
+                <div class="candidate-name">🎓 <%= candidate.candidate_name %></div>
+                <div class="candidate-position">🏆 <%= candidate.position %></div>
+                <div class="vote-count">🏆 <%= candidate.vote_count %> Votes</div>
+                <% if (index === 0 && candidate.vote_count > 0) { %>
+                    <div style="text-align: center; margin-top: 10px;">
+                        <span style="background: #f39c12; color: white; padding: 5px 10px; border-radius: 20px; font-weight: bold;">🎉 WINNER</span>
+                    </div>
+                <% } %>
             </div>
+            <% }); %>
         <% } %>
+        
+        <a href="/admin/elections" class="btn">← Back to Elections</a>
     </div>
 </body>
 </html>

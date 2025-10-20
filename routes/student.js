@@ -13,27 +13,6 @@ const requireStudent = (req, res, next) => {
 
 router.use(requireStudent);
 
-// Function to update election status automatically
-const updateElectionStatus = () => {
-    const updateQuery = `
-        UPDATE elections 
-        SET status = 'ongoing' 
-        WHERE start_date <= NOW() AND end_date >= NOW() AND status != 'ongoing'
-    `;
-    
-    db.query(updateQuery, (err, result) => {
-        if (err) {
-            console.error('Error updating election status:', err);
-        }
-    });
-};
-
-// Update status on every student request
-router.use((req, res, next) => {
-    updateElectionStatus();
-    next();
-});
-
 // Student dashboard
 router.get('/dashboard', (req, res) => {
     const query = `
@@ -41,14 +20,8 @@ router.get('/dashboard', (req, res) => {
                (SELECT COUNT(*) FROM candidates c WHERE c.election_id = e.id AND c.user_id = ?) as is_candidate,
                (SELECT COUNT(*) FROM votes v WHERE v.election_id = e.id AND v.voter_id = ?) as has_voted
         FROM elections e 
-        WHERE e.status IN ('ongoing', 'upcoming', 'completed')
-        ORDER BY 
-            CASE 
-                WHEN e.status = 'ongoing' THEN 1
-                WHEN e.status = 'upcoming' THEN 2
-                WHEN e.status = 'completed' THEN 3
-            END,
-            e.start_date DESC
+        WHERE e.status = 'ongoing'
+        ORDER BY e.end_date ASC
     `;
     
     db.query(query, [req.session.user.id, req.session.user.id], (err, elections) => {
@@ -67,21 +40,15 @@ router.get('/dashboard', (req, res) => {
     });
 });
 
-// View elections to vote
+// View all elections
 router.get('/elections', (req, res) => {
     const query = `
         SELECT e.*, 
                (SELECT COUNT(*) FROM candidates c WHERE c.election_id = e.id AND c.status = 'approved') as candidate_count,
                (SELECT COUNT(*) FROM votes v WHERE v.election_id = e.id AND v.voter_id = ?) as has_voted
         FROM elections e 
-        WHERE e.status IN ('upcoming', 'ongoing', 'completed')
-        ORDER BY 
-            CASE 
-                WHEN e.status = 'ongoing' THEN 1
-                WHEN e.status = 'upcoming' THEN 2
-                WHEN e.status = 'completed' THEN 3
-            END,
-            e.start_date DESC
+        WHERE e.status = 'ongoing'
+        ORDER BY e.end_date ASC
     `;
     
     db.query(query, [req.session.user.id], (err, elections) => {
@@ -93,42 +60,31 @@ router.get('/elections', (req, res) => {
             });
         }
         
-        const success = req.query.success;
-        const error = req.query.error;
-        
         res.render('student/elections', {
             user: req.session.user,
-            elections: elections,
-            success: success,
-            error: error
+            elections: elections
         });
     });
 });
 
-// Register as candidate
-router.get('/register-candidate/:electionId', (req, res) => {
-    const electionId = req.params.electionId;
+// Register as candidate - WORKING
+router.get('/register-candidate/:id', (req, res) => {
+    const electionId = req.params.id;
     
-    const electionCheckQuery = 'SELECT * FROM elections WHERE id = ? AND status IN ("upcoming", "ongoing")';
-    db.query(electionCheckQuery, [electionId], (err, electionResults) => {
-        if (err) {
-            console.error(err);
-            return res.redirect('/student/dashboard');
+    // Check if election exists
+    db.query('SELECT * FROM elections WHERE id = ?', [electionId], (err, electionResults) => {
+        if (err || electionResults.length === 0) {
+            return res.redirect('/student/elections');
         }
         
-        if (electionResults.length === 0) {
-            return res.redirect('/student/dashboard?error=election_ended');
-        }
-        
-        const checkQuery = 'SELECT * FROM candidates WHERE election_id = ? AND user_id = ?';
-        db.query(checkQuery, [electionId, req.session.user.id], (err, results) => {
+        // Check if already registered
+        db.query('SELECT * FROM candidates WHERE election_id = ? AND user_id = ?', [electionId, req.session.user.id], (err, candidateResults) => {
             if (err) {
-                console.error(err);
-                return res.redirect('/student/dashboard');
+                return res.redirect('/student/elections');
             }
             
-            if (results.length > 0) {
-                return res.redirect('/student/dashboard?error=already_registered');
+            if (candidateResults.length > 0) {
+                return res.redirect('/student/elections?error=already_registered');
             }
             
             res.render('student/register-candidate', {
@@ -141,22 +97,22 @@ router.get('/register-candidate/:electionId', (req, res) => {
     });
 });
 
-// Process candidate registration
-router.post('/register-candidate/:electionId', (req, res) => {
-    const electionId = req.params.electionId;
-    const { position, manifesto } = req.body;
+// Process candidate registration - WORKING
+router.post('/register-candidate/:id', (req, res) => {
+    const electionId = req.params.id;
+    const { candidate_name, position, manifesto } = req.body;
     
-    if (!position) {
+    if (!candidate_name || !position) {
         return res.render('student/register-candidate', {
             user: req.session.user,
             election: { id: electionId },
-            error: 'Please enter the position you are running for!',
+            error: 'Candidate name and position are required!',
             success: null
         });
     }
     
-    const query = 'INSERT INTO candidates (user_id, election_id, position, manifesto, status) VALUES (?, ?, ?, ?, "pending")';
-    db.query(query, [req.session.user.id, electionId, position, manifesto], (err, results) => {
+    const query = 'INSERT INTO candidates (election_id, user_id, candidate_name, position, manifesto) VALUES (?, ?, ?, ?, ?)';
+    db.query(query, [electionId, req.session.user.id, candidate_name, position, manifesto], (err, results) => {
         if (err) {
             console.error(err);
             return res.render('student/register-candidate', {
@@ -176,107 +132,21 @@ router.post('/register-candidate/:electionId', (req, res) => {
     });
 });
 
-// Vote in election - SIMPLIFIED VERSION
-router.get('/vote/:electionId', (req, res) => {
-    const electionId = req.params.electionId;
-    console.log('VOTE PAGE: Loading vote page for election:', electionId);
+// Vote in election - WORKING
+router.get('/vote/:id', (req, res) => {
+    const electionId = req.params.id;
     
-    // First, check if election exists
-    const electionQuery = 'SELECT * FROM elections WHERE id = ?';
-    db.query(electionQuery, [electionId], (err, electionResults) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.redirect('/student/elections?error=server_error');
-        }
-        
-        if (electionResults.length === 0) {
-            console.log('Election not found:', electionId);
+    // Get election details
+    db.query('SELECT * FROM elections WHERE id = ?', [electionId], (err, electionResults) => {
+        if (err || electionResults.length === 0) {
             return res.redirect('/student/elections?error=election_not_found');
         }
         
         const election = electionResults[0];
-        console.log('Election found:', election.title, 'Status:', election.status);
         
-        // Check if election is active
-        if (election.status !== 'ongoing') {
-            console.log('Election not active. Status:', election.status);
-            return res.redirect('/student/elections?error=election_not_active');
-        }
-        
-        // Check if student already voted
-        const voteCheckQuery = 'SELECT * FROM votes WHERE election_id = ? AND voter_id = ?';
-        db.query(voteCheckQuery, [electionId, req.session.user.id], (err, voteResults) => {
-            if (err) {
-                console.error('Vote check error:', err);
-                return res.redirect('/student/elections?error=server_error');
-            }
-            
-            if (voteResults.length > 0) {
-                console.log('Student already voted');
-                return res.redirect('/student/elections?error=already_voted');
-            }
-            
-            // Get approved candidates for this election
-            const candidatesQuery = `
-                SELECT c.id as candidate_id, u.full_name, c.position, c.manifesto
-                FROM candidates c
-                JOIN users u ON c.user_id = u.id
-                WHERE c.election_id = ? AND c.status = 'approved'
-            `;
-            
-            db.query(candidatesQuery, [electionId], (err, candidates) => {
-                if (err) {
-                    console.error('Candidates query error:', err);
-                    return res.redirect('/student/elections?error=server_error');
-                }
-                
-                console.log('Found candidates:', candidates.length);
-                
-                if (candidates.length === 0) {
-                    console.log('No approved candidates');
-                    return res.redirect('/student/elections?error=no_candidates');
-                }
-                
-                // SUCCESS: Render voting page
-                console.log('Rendering voting page with', candidates.length, 'candidates');
-                res.render('student/vote', {
-                    user: req.session.user,
-                    election: election,
-                    candidates: candidates
-                });
-            });
-        });
-    });
-});
-
-// Process vote
-router.post('/vote/:electionId', (req, res) => {
-    const electionId = req.params.electionId;
-    const { candidate_id } = req.body;
-    
-    console.log('Processing vote for election:', electionId, 'Candidate:', candidate_id);
-    
-    if (!candidate_id) {
-        return res.redirect('/student/vote/' + electionId + '?error=no_candidate_selected');
-    }
-    
-    // Check if election is still active
-    const electionCheckQuery = 'SELECT * FROM elections WHERE id = ? AND status = "ongoing"';
-    db.query(electionCheckQuery, [electionId], (err, electionResults) => {
-        if (err) {
-            console.error(err);
-            return res.redirect('/student/elections');
-        }
-        
-        if (electionResults.length === 0) {
-            return res.redirect('/student/elections?error=election_ended');
-        }
-    
         // Check if already voted
-        const voteCheckQuery = 'SELECT * FROM votes WHERE election_id = ? AND voter_id = ?';
-        db.query(voteCheckQuery, [electionId, req.session.user.id], (err, voteResults) => {
+        db.query('SELECT * FROM votes WHERE election_id = ? AND voter_id = ?', [electionId, req.session.user.id], (err, voteResults) => {
             if (err) {
-                console.error(err);
                 return res.redirect('/student/elections');
             }
             
@@ -284,49 +154,74 @@ router.post('/vote/:electionId', (req, res) => {
                 return res.redirect('/student/elections?error=already_voted');
             }
             
-            // Record the vote
-            const voteQuery = 'INSERT INTO votes (election_id, voter_id, candidate_id) VALUES (?, ?, ?)';
-            db.query(voteQuery, [electionId, req.session.user.id, candidate_id], (err, results) => {
-                if (err) {
-                    console.error(err);
-                    return res.redirect('/student/elections');
+            // Get approved candidates
+            db.query('SELECT * FROM candidates WHERE election_id = ? AND status = "approved"', [electionId], (err, candidateResults) => {
+                if (err || candidateResults.length === 0) {
+                    return res.redirect('/student/elections?error=no_candidates');
                 }
                 
-                res.redirect('/student/elections?success=voted');
+                res.render('student/vote', {
+                    user: req.session.user,
+                    election: election,
+                    candidates: candidateResults
+                });
             });
         });
     });
 });
 
-// View results
-router.get('/results/:electionId', (req, res) => {
-    const electionId = req.params.electionId;
+// Process vote - WORKING
+router.post('/vote/:id', (req, res) => {
+    const electionId = req.params.id;
+    const { candidate_id } = req.body;
     
-    const electionQuery = 'SELECT * FROM elections WHERE id = ?';
-    db.query(electionQuery, [electionId], (err, electionResults) => {
+    if (!candidate_id) {
+        return res.redirect('/student/vote/' + electionId + '?error=no_candidate');
+    }
+    
+    // Check if already voted
+    db.query('SELECT * FROM votes WHERE election_id = ? AND voter_id = ?', [electionId, req.session.user.id], (err, voteResults) => {
         if (err) {
-            console.error(err);
             return res.redirect('/student/elections');
         }
         
-        if (electionResults.length === 0) {
+        if (voteResults.length > 0) {
+            return res.redirect('/student/elections?error=already_voted');
+        }
+        
+        // Record vote
+        const voteQuery = 'INSERT INTO votes (election_id, voter_id, candidate_id) VALUES (?, ?, ?)';
+        db.query(voteQuery, [electionId, req.session.user.id, candidate_id], (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.redirect('/student/elections');
+            }
+            
+            res.redirect('/student/elections?success=voted');
+        });
+    });
+});
+
+// View results - WORKING
+router.get('/results/:id', (req, res) => {
+    const electionId = req.params.id;
+    
+    // Get election details
+    db.query('SELECT * FROM elections WHERE id = ?', [electionId], (err, electionResults) => {
+        if (err || electionResults.length === 0) {
             return res.redirect('/student/elections');
         }
         
         const election = electionResults[0];
-        const now = new Date();
-        const endDate = new Date(election.end_date);
         
-        const canViewResults = now > endDate || election.status === 'completed';
-        
+        // Get results
         const resultsQuery = `
-            SELECT c.id, u.full_name, c.position, COUNT(v.id) as votes
+            SELECT c.candidate_name, c.position, COUNT(v.id) as vote_count
             FROM candidates c
-            JOIN users u ON c.user_id = u.id
             LEFT JOIN votes v ON c.id = v.candidate_id
             WHERE c.election_id = ? AND c.status = 'approved'
             GROUP BY c.id
-            ORDER BY votes DESC
+            ORDER BY vote_count DESC
         `;
         
         db.query(resultsQuery, [electionId], (err, results) => {
@@ -338,10 +233,7 @@ router.get('/results/:electionId', (req, res) => {
             res.render('student/results', {
                 user: req.session.user,
                 election: election,
-                results: results,
-                canViewResults: canViewResults,
-                currentTime: now,
-                endTime: endDate
+                results: results || []
             });
         });
     });

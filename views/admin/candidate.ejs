@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Candidates - Admin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px; position: fixed; }
+        .main-content { margin-left: 270px; padding: 30px; }
+        .header { background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .candidate-card { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 5px solid #3498db; }
+        .btn { display: inline-block; padding: 10px 15px; text-decoration: none; border-radius: 5px; color: white; font-size: 14px; margin: 5px; border: none; cursor: pointer; }
+        .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #219653; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        .status-pending { background: #fff3cd; color: #856404; padding: 5px 10px; border-radius: 20px; font-weight: bold; display: inline-block; }
+        .status-approved { background: #d4edda; color: #155724; padding: 5px 10px; border-radius: 20px; font-weight: bold; display: inline-block; }
+        .status-rejected { background: #f8d7da; color: #721c24; padding: 5px 10px; border-radius: 20px; font-weight: bold; display: inline-block; }
+        a { color: white; text-decoration: none; display: block; padding: 10px; border-radius: 5px; margin: 5px 0; }
+        a:hover { background: #34495e; }
+        .user-info { background: #e7f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b3d9ff; }
+        .candidate-info { margin-bottom: 15px; }
+        .candidate-info h3 { color: #2c3e50; margin-bottom: 10px; }
+        .candidate-info p { margin: 5px 0; color: #555; }
+        .no-candidates { text-align: center; padding: 40px; background: white; border-radius: 10px; color: #7f8c8d; }
+        .action-buttons { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Admin Panel</h2>
+        <a href="/admin/dashboard">📊 Dashboard</a>
+        <a href="/admin/elections">🗳️ Manage Elections</a>
+        <a href="/admin/candidates" style="background: #34495e;">👥 Manage Candidates</a>
+        <a href="/admin/students">🎓 Manage Students</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+    
+    <div class="main-content">
+        <div class="header">
+            <h1>Manage Candidates</h1>
+            <div class="user-info">
+                <p><strong>Welcome:</strong> <%= user.full_name %></p>
+                <p><strong>College ID:</strong> <%= user.college_id %></p>
+                <p><strong>Total Candidates:</strong> <%= candidates.length %></p>
+            </div>
+        </div>
+        
+        <% if (candidates.length === 0) { %>
+            <div class="no-candidates">
+                <h3>📭 No Candidate Applications</h3>
+                <p>No students have registered as candidates yet.</p>
+                <p>Students can register as candidates from their dashboard.</p>
+                <br>
+                <p><strong>To test:</strong></p>
+                <p>1. Register a student account</p>
+                <p>2. Login as student</p>
+                <p>3. Register as candidate in an election</p>
+                <p>4. Come back here to approve/reject</p>
+            </div>
+        <% } else { %>
+            <% candidates.forEach(candidate => { %>
+            <div class="candidate-card">
+                <div class="candidate-info">
+                    <h3>🎓 <%= candidate.candidate_name %></h3>
+                    <p><strong>Student:</strong> <%= candidate.student_name %> (<%= candidate.college_id %>)</p>
+                    <p><strong>Election:</strong> <%= candidate.election_title %></p>
+                    <p><strong>Position:</strong> <%= candidate.position %></p>
+                    <% if (candidate.manifesto) { %>
+                        <p><strong>Manifesto:</strong> <%= candidate.manifesto %></p>
+                    <% } %>
+                    <p><strong>Status:</strong> 
+                        <span class="status-<%= candidate.status %>"><%= candidate.status %></span>
+                    </p>
+                    <p><strong>Applied on:</strong> <%= new Date(candidate.created_at).toLocaleString() %></p>
+                </div>
+                
+                <div class="action-buttons">
+                    <% if (candidate.status === 'pending') { %>
+                        <div>
+                            <a href="/admin/approve-candidate/<%= candidate.id %>" class="btn btn-success">✅ Approve Candidate</a>
+                            <a href="/admin/reject-candidate/<%= candidate.id %>" class="btn btn-danger">❌ Reject Candidate</a>
+                        </div>
+                    <% } else if (candidate.status === 'approved') { %>
+                        <p style="color: #27ae60; font-weight: bold;">✅ Candidate Approved - Students can now vote for this candidate</p>
+                    <% } else { %>
+                        <p style="color: #e74c3c; font-weight: bold;">❌ Candidate Rejected</p>
+                    <% } %>
+                </div>
+            </div>
+            <% }); %>
+        <% } %>
+    </div>
+</body>
+</html>
