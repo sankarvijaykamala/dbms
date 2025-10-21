@@ -149,15 +149,12 @@
                 
                 <div style="margin-top: 15px;">
                     <% if (election.has_voted) { %>
-                        <a href="/student/results/<%= election.id %>" class="btn btn-warning">View Results</a>
                         <span style="color: #27ae60; font-weight: bold;">✅ You have voted</span>
                     <% } else if (election.is_candidate) { %>
                         <span style="color: #3498db; font-weight: bold;">🎓 You are registered as candidate</span>
-                        <a href="/student/results/<%= election.id %>" class="btn btn-secondary">View Results</a>
                     <% } else { %>
                         <a href="/student/vote/<%= election.id %>" class="btn btn-success">Vote Now</a>
                         <a href="/student/register-candidate/<%= election.id %>" class="btn btn-primary">Register as Candidate</a>
-                        <a href="/student/results/<%= election.id %>" class="btn btn-secondary">View Results</a>
                     <% } %>
                 </div>
             </div>
